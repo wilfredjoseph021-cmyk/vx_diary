@@ -1,3 +1,4 @@
+from ai_helper import summarize_note
 from cryptography.fernet import Fernet
 import os
 from datetime import datetime
@@ -13,15 +14,43 @@ else:
 
 cipher = Fernet(key)
 
-# Functions
+# New Auto-taggin function
+def auto_tag(note):
+    tags = []
+    keywords = {
+        "idea": ["plan", "concept", "project", "idea"],
+        "task": ["todo", "task", "do", "finish"],
+        "secret": ["password", "hidden", "secret"]
+    }
+    for tag, words in keywords.items():
+        for word in words:
+            if word.lower() in note.lower():
+                tags.append(f"#{tag}")
+    return " ".join(tags)
+
+#Updated add-note function
 def add_note():
     note = input("Enter new note: ")
+    tags = auto_tag(note)   # NEW line
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    data = f"{timestamp} | {note}"
+    data = f"{timestamp} | {note} | {tags}"
     encrypted = cipher.encrypt(data.encode())
     with open("vault.txt", "ab") as f:
         f.write(encrypted + b"\n")
-    print("✅ Note added with timestamp.")
+    print("✅ Note added with tags:", tags)
+
+
+# Functions
+def add_note():
+    note = input("Enter new note: ")
+    tags = auto_tag(note)   # <-- NEW
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    data = f"{timestamp} | {note} | {tags}"   # <-- NEW
+    encrypted = cipher.encrypt(data.encode())
+    with open("vault.txt", "ab") as f:
+        f.write(encrypted + b"\n")
+    print("✅ Note added with tags:", tags)   # <-- NEW
+
 
 def read_notes():
     if not os.path.exists("vault.txt"):
@@ -34,8 +63,14 @@ def read_notes():
         try:
             decrypted = cipher.decrypt(line.strip()).decode()
             print(decrypted)
+
+            # Generate AI-style summary
+            summary = summarize_note(decrypted)
+            print("   👉 Summary:", summary)
+
         except:
             print("❌ Corrupted note found.")
+
 
 def search_notes():
     if not os.path.exists("vault.txt"):
@@ -65,3 +100,4 @@ while True:
         search_notes()
     else:
         break
+    
