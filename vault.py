@@ -1,9 +1,10 @@
-from ai_helper import summarize_note
+# vault.py
 from cryptography.fernet import Fernet
 import os
 from datetime import datetime
-
-# Load or generate key
+from ghost_agent import ghost_reply  # AI Ghost Agent
+# --------------------------
+# Load or generate encryption key
 if os.path.exists("key.key"):
     with open("key.key", "rb") as f:
         key = f.read()
@@ -14,7 +15,8 @@ else:
 
 cipher = Fernet(key)
 
-# New Auto-taggin function
+# --------------------------
+# Auto-tagging function
 def auto_tag(note):
     tags = []
     keywords = {
@@ -28,10 +30,11 @@ def auto_tag(note):
                 tags.append(f"#{tag}")
     return " ".join(tags)
 
-#Updated add-note function
+# --------------------------
+# Add note function
 def add_note():
     note = input("Enter new note: ")
-    tags = auto_tag(note)   # NEW line
+    tags = auto_tag(note)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     data = f"{timestamp} | {note} | {tags}"
     encrypted = cipher.encrypt(data.encode())
@@ -39,19 +42,15 @@ def add_note():
         f.write(encrypted + b"\n")
     print("✅ Note added with tags:", tags)
 
+    # Ghost Agent reply
+    try:
+        agent_response = ghost_reply(note)
+        print("👻 Ghost Agent:", agent_response)
+    except Exception as e:
+        print("⚠️ Ghost Agent error:", e)
 
-# Functions
-def add_note():
-    note = input("Enter new note: ")
-    tags = auto_tag(note)   # <-- NEW
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    data = f"{timestamp} | {note} | {tags}"   # <-- NEW
-    encrypted = cipher.encrypt(data.encode())
-    with open("vault.txt", "ab") as f:
-        f.write(encrypted + b"\n")
-    print("✅ Note added with tags:", tags)   # <-- NEW
-
-
+# --------------------------
+# Read notes
 def read_notes():
     if not os.path.exists("vault.txt"):
         print("Vault is empty.")
@@ -63,15 +62,11 @@ def read_notes():
         try:
             decrypted = cipher.decrypt(line.strip()).decode()
             print(decrypted)
-
-            # Generate AI-style summary
-            summary = summarize_note(decrypted)
-            print("   👉 Summary:", summary)
-
         except:
             print("❌ Corrupted note found.")
 
-
+# --------------------------
+# Search notes
 def search_notes():
     if not os.path.exists("vault.txt"):
         print("Vault is empty.")
@@ -88,6 +83,7 @@ def search_notes():
         except:
             pass
 
+# --------------------------
 # Main menu
 while True:
     print("\n=== VX Ghost Vault ===")
@@ -100,4 +96,3 @@ while True:
         search_notes()
     else:
         break
-    
